@@ -4,14 +4,14 @@ import yfinance as yf
 import datetime
 import math
 
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+app = FastAPI()
+
 cash = 10000
 assets = ['BTC-USD', 'BNB-USD','ETH-USD','XRP-USD','DOGE-USD','LINK-USD','COMP5692-USD','LPT-USD','LDO-USD','SOL-USD','RNDR-USD','SUSHI-USD','SNX-USD','OP-USD','AVAX-USD','AAVE-USD','INJ-USD','GRT6719-USD']
-# assets = ['BTC-USD', 'BNB-USD']
-# assets = ['BTC-USD', 'BNB-USD']
 safeAsset = 'USDT-USD'
 cppi_value = cash
 weights = [0.0999999999999998,0.17,0.07,0.05,0.02,0.07,0.05,0.05,0.04,0.03,0.08,0.03,0.05,0.00,0.07,0.07,0.03,0.02]
-# weights = [0.5,0.5]
 # print sum of all weights
 print(sum(weights))
 if sum(weights) != 1:
@@ -339,6 +339,6 @@ while timelaps < length - 1 and cppi_value > floor_value:
     s_ret = 0
     # cppi_value = riskAlloc*(1 + r_ret) + safeAlloc*(1 + s_ret)
     cppi_value = getTotalValue()
-    # print("llla: ", getTotalValue())
+    print("llla: ", getTotalValue())
     # print(qty)
     save_cppi_metrics()
