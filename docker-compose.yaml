@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+    ports:
+      - "27170:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+    
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+    environment:
+      - TZ=Asia/Tehran
+      - MONGO_URI=mongodb://mongo:27017/
+    restart: always
+
+volumes:
+  mongo_data:

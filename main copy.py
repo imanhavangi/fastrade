@@ -3,9 +3,39 @@ import csv
 import yfinance as yf
 import datetime
 import math
-
+import motor.motor_asyncio
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+
+client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGO_URI"])
+db = client.myTestDB
+
 app = FastAPI()
+origins = [
+    "*"
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/backtest")
+async def backtest(task: Task):
+    task.created_time = str(datetime.now())
+    submitted_task = await db["tasks"].insert_one(task.toJSON())
+
+    data = task.toJSON()
+    data["_id"] = str(submitted_task.inserted_id)
+    for connection in websocket_connections.copy():
+        try:
+            # if connection[0] in task.assign_user_ids:
+            await connection[1].send_json({"event": "new_task", "task": data})
+        except WebSocketDisconnect:
+            websocket_connections.remove(connection)
+    return {"message": "Task submitted successfully", "task": data}
 
 cash = 10000
 assets = ['BTC-USD', 'BNB-USD','ETH-USD','XRP-USD','DOGE-USD','LINK-USD','COMP5692-USD','LPT-USD','LDO-USD','SOL-USD','RNDR-USD','SUSHI-USD','SNX-USD','OP-USD','AVAX-USD','AAVE-USD','INJ-USD','GRT6719-USD']
