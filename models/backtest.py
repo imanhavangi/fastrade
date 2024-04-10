@@ -12,16 +12,7 @@ class BackTest(BaseModel):
     interval: str
     floor_percent: float
     m: int
-
-    created_user_id: str | None = None
-    assign_user_ids: list[str]
-    priority: int | None = None
-    urgency: int | None = None
-    status: int | None = None
-    # TODO: delete datetime.now() from this model
-    created_time: str = str(datetime.now())
-    doing_time: str = str(datetime.now())
-    doing_count: int = 0
+    changes_percent: int
 
     def toJSON(self):
         return self.model_dump()

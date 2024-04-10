@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 
-class Asset(BaseModel):
-    symbol: str
-    weight: float
+class PositionValue(BaseModel):
+    totalValue: float
+    s_value: float
 
     def toJSON(self):
         return self.model_dump()
