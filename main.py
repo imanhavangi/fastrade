@@ -40,7 +40,7 @@ async def backTest(backtest: BackTest):
 
 
     while backdata.timelaps < backdata.length - 1 and backdata.cppi_value > backdata.floor_value:
-        print(backdata.timelaps)
+        # print(backdata.timelaps)
         backdata.max_cppi_value = max(backdata.max_cppi_value, backdata.cppi_value)
         backdata.floor_value = backdata.max_cppi_value * backdata.floor_percent
         
@@ -48,15 +48,19 @@ async def backTest(backtest: BackTest):
         
         riskAlloc = max(min(backdata.m * cushion, backdata.cppi_value), 0)
         safeAlloc = backdata.cppi_value - riskAlloc
-        # print('gew: ' + str(riskAlloc) + ' : ' + str(safeAlloc))
+        if (backdata.timelaps < 50):
+            print('gew: ' + str(riskAlloc) + ' : ' + str(safeAlloc))
         
         if backdata.timelaps == 0:
             rebalanceF(risk_alloc=riskAlloc, safe_alloc=safeAlloc)
-            riskpreval = getAllRiskyAssetsValue()
+            backdata.riskpreval = getAllRiskyAssetsValue()
+
         else:
-            if abs((getAllRiskyAssetsValue() - riskpreval) / riskpreval) > backtest.changes_percent:
+            if (backdata.timelaps < 50):
+                print(getAllRiskyAssetsValue() , " d|d ", backdata.riskpreval)
+            if abs((getAllRiskyAssetsValue() - backdata.riskpreval) / backdata.riskpreval) > backdata.changes_percent:
                 rebalance(risk_alloc=riskAlloc, safe_alloc = safeAlloc)
-                riskpreval = getAllRiskyAssetsValue()
+                backdata.riskpreval = getAllRiskyAssetsValue()
         
         # next
         backdata.timelaps = backdata.timelaps + 1
@@ -66,7 +70,7 @@ async def backTest(backtest: BackTest):
         s_ret = 0
         # cppi_value = riskAlloc*(1 + r_ret) + safeAlloc*(1 + s_ret)
         backdata.cppi_value = getTotalValue()
-        print("llla: ", getTotalValue() , ", ", backdata.timelaps )
+        # print("llla: ", getTotalValue() , ", ", backdata.timelaps )
 
         # print(qty)
         # save_cppi_metrics()
@@ -148,6 +152,8 @@ def checkqty(symbol, q):
 def getAllRiskyAssetsValue():
     total_value = 0
     for asset in backdata.assets:
+        if (backdata.timelaps < 50):
+            print(getLastPrice(asset.symbol) , " |asdsd| " , backdata.qty[asset.symbol])
         total_value += getLastPrice(asset.symbol) * backdata.qty[asset.symbol]
     return total_value
 
@@ -180,14 +186,18 @@ def placeOrder(symbol, amount):
         
     current_asset_price = getLastPrice(symbol)
     q = abs(amount) / current_asset_price
-    # print('de1:' , amount , " : " , symbol , ' : ', q , " : ", cash , ' : ', side)
+    print('de1:' , amount , " : " , symbol , ' : ', q , " : ", backdata.cash , ' : ', side)
     
 
     if side == 'buy':
+        print("asdasdasd")
         if backdata.cash < amount:
             return 0
-        backdata.cash = backdata.cash - q*current_asset_price*1.001
-        backdata.qty[symbol] = backdata.qty[symbol] + q
+        print("asdasdasd2")
+        backdata.cash = backdata.cash - q*current_asset_price
+        print("asdasdasd3  ", q)
+        backdata.qty[symbol] = backdata.qty[symbol] + q*0.999
+        print(backdata.qty)
         backdata.trades.append({'side': side, 'symbol': symbol, 'q': q, 'price': current_asset_price})
         # save_trades_metrics({'side': side, 'symbol': symbol, 'q': q, 'price': current_asset_price, 'amount': q*current_asset_price})
     elif side == 'sell':
@@ -199,8 +209,8 @@ def placeOrder(symbol, amount):
             q = backdata.qty[symbol]
         if q*current_asset_price >= 5:
             temp = q*current_asset_price
-            backdata.qty[symbol] = backdata.qty[symbol] - q
-            backdata.cash = backdata.cash + q*current_asset_price*0.999
+            backdata.qty[symbol] = backdata.qty[symbol] - q*1.001
+            backdata.cash = backdata.cash + q*current_asset_price
             backdata.trades.append({'side': side, 'symbol': symbol, 'q': q, 'price': current_asset_price})
             # save_trades_metrics({'side': side, 'symbol': symbol, 'q': q, 'price': current_asset_price, 'amount': q*current_asset_price})
         else:
@@ -212,7 +222,7 @@ def multiPlaceOrder(amount):
     temp = 0
     # totalTemp = 0
     for asset in backdata.assets:
-        # print(asset.weight)
+        print(asset.weight)
         temp += placeOrder(asset.symbol, amount*(asset.weight/100))
         # amountT = amountT - (amount*weights[assets.index(asset)] - temp)
         # totalTemp = totalTemp + temp
@@ -223,6 +233,7 @@ def rebalanceF(risk_alloc, safe_alloc):
         temp = placeOrder(backdata.safe, safe_alloc - getsafeAssetValue())
         multiPlaceOrder(risk_alloc - getAllRiskyAssetsValue() + temp)
     else:
+        price("place risk")
         temp = multiPlaceOrder(risk_alloc - getAllRiskyAssetsValue())
         placeOrder(backdata.safe, safe_alloc - getsafeAssetValue() + temp)
         

@@ -12,7 +12,7 @@ class BackTest(BaseModel):
     interval: str
     floor_percent: float
     m: int
-    changes_percent: int
+    changes_percent: float
 
     def toJSON(self):
         return self.model_dump()

@@ -20,8 +20,8 @@ class BackData(BackTest):
     def from_backtest(cls, backtest: BackTest):
         qtyTemp = {}
         qtyTemp[backtest.safe] = 0
-        for symbol in backtest.assets:
-            qtyTemp[symbol.symbol] = 0
+        for asset in backtest.assets:
+                qtyTemp[asset.symbol] = 0
         # for asset in backtest.assets:
         #     asset.symbol = asset.symbol + '-USD'
         return cls(
