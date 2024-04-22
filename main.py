@@ -8,9 +8,12 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from models.backtest import BackTest
 from models.backdata import BackData
+from models.live import Live
+from apscheduler.schedulers.background import BackgroundScheduler
 
-# client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGO_URI"])
-# db = client.myTestDB
+
+client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGO_URI"])
+db = client.myTestDB
 
 app = FastAPI()
 origins = [
@@ -26,8 +29,48 @@ app.add_middleware(
 # qty = {}
 # trades = []
 # data_dict = {}
- 
+
+def testcron(id):
+    print(id)
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(testcron, 'interval', args=["chi"] , seconds=5, id="job1")
+scheduler.add_job(testcron, 'interval', args=["sih"] , seconds=10)
+# scheduler.add_job(testcron, 'interval', "shi" , minutes=10)
+scheduler.start()
+
 backdata = BackData
+livedata = Live
+
+@app.post("/live")
+async def live(backtest: BackTest):
+    global livedata
+    livedata = Live.from_backtest(backtest=backtest)
+    
+    print(livedata.toJSON())
+    # while live.cppi_value > live.floor_value:
+    #     max_cppi_value = max(max_cppi_value, cppi_value)
+    #     floor_value = max_cppi_value*floor_percent
+    #     cushion = cppi_value - floor_value
+    #     riskAlloc = max(min(m*cushion, cppi_value), 0)
+    #     safeAlloc = cppi_value - riskAlloc
+        
+    #     if t == 0:
+    #         rebalance(risk_alloc=riskAlloc, safe_alloc=safeAlloc)
+    #         time.sleep(30)
+    #         riskpreval = getAllRiskyAssetsValue()
+    #         t = 1
+    #     else:
+    #         if abs((getAllRiskyAssetsValue() - riskpreval) / riskpreval) > 0.005:
+    #             rebalance(risk_alloc=riskAlloc, safe_alloc=safeAlloc)
+    #             time.sleep(30)
+    #             riskpreval = getAllRiskyAssetsValue()
+        
+    #     cppi_value = getTotalValue()
+        
+    #     printLastStatus()
+    #     time.sleep(30)
+
 
 @app.post("/backtest")
 async def backTest(backtest: BackTest):
@@ -57,7 +100,7 @@ async def backTest(backtest: BackTest):
 
         else:
             if (backdata.timelaps < 50):
-                print(getAllRiskyAssetsValue() , " d|d ", backdata.riskpreval)
+                print(getAllRiskyAssetsValue() , " d|d ", backdata.riskpreval, " d|d ", backdata.changes_percent)
             if abs((getAllRiskyAssetsValue() - backdata.riskpreval) / backdata.riskpreval) > backdata.changes_percent:
                 rebalance(risk_alloc=riskAlloc, safe_alloc = safeAlloc)
                 backdata.riskpreval = getAllRiskyAssetsValue()
@@ -152,8 +195,8 @@ def checkqty(symbol, q):
 def getAllRiskyAssetsValue():
     total_value = 0
     for asset in backdata.assets:
-        if (backdata.timelaps < 50):
-            print(getLastPrice(asset.symbol) , " |asdsd| " , backdata.qty[asset.symbol])
+        # if (backdata.timelaps < 50):
+            # print(getLastPrice(asset.symbol) , " |asdsd| " , backdata.qty[asset.symbol])
         total_value += getLastPrice(asset.symbol) * backdata.qty[asset.symbol]
     return total_value
 

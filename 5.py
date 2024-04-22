@@ -5,8 +5,8 @@ import datetime
 import math
 import time
 
-api_key = "cyGsKJY8h8DVrim7YVFPBNzZ1vL7krfF6Byoo9ZOYvz5dnIU3LjAFDt4UNSNV8Tm" 
-api_secret = "JuZSZyF7gZatYcdQpYWwXoCIwBEYdNDOqCMZTvIkco8WOIfXu8iYVf5z6unRVgW7"
+api_key = "-" 
+api_secret = "-"
 client = Spot(api_key=api_key, api_secret=api_secret)
 # Get account information
 info = client.account()
