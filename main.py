@@ -10,6 +10,9 @@ from models.backtest import BackTest
 from models.backdata import BackData
 from models.live import Live
 from apscheduler.schedulers.background import BackgroundScheduler
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 
 client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGO_URI"])
@@ -34,10 +37,12 @@ def testcron(id):
     print(id)
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(testcron, 'interval', args=["chi"] , seconds=5, id="job1")
+liveScheduler = AsyncIOScheduler()
+# scheduler.add_job(testcron, 'interval', args=["chi"] , seconds=5, id="job1")
 scheduler.add_job(testcron, 'interval', args=["sih"] , seconds=10)
 # scheduler.add_job(testcron, 'interval', "shi" , minutes=10)
 scheduler.start()
+liveScheduler.start()
 
 backdata = BackData
 livedata = Live
@@ -46,8 +51,14 @@ livedata = Live
 async def live(backtest: BackTest):
     global livedata
     livedata = Live.from_backtest(backtest=backtest)
-    
+
     print(livedata.toJSON())
+    livedb = await db["lives"].insert_one(livedata.toJSON())
+    liveScheduler.add_job(liveCycle, 'interval', seconds=int(livedata.interval), args=[livedb.inserted_id], id=str(livedb.inserted_id))
+    # scheduler.add_job(testcron, 'interval', args=["chi"] , seconds=10)
+    # scheduler.restart()
+    return {"message": "Signup successful", "_id": str(livedb.inserted_id)}
+
     # while live.cppi_value > live.floor_value:
     #     max_cppi_value = max(max_cppi_value, cppi_value)
     #     floor_value = max_cppi_value*floor_percent
@@ -71,6 +82,13 @@ async def live(backtest: BackTest):
     #     printLastStatus()
     #     time.sleep(30)
 
+async def liveCycle(id):
+    print(id)
+    datalive = await db["lives"].find_one({"_id": id})
+    live = Live(**datalive)
+    # print(live)
+    if live.cppi_value > live.floor_value:
+        
 
 @app.post("/backtest")
 async def backTest(backtest: BackTest):
